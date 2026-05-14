@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>User Dashboard - InvenSync</title>
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: http://localhost:3000;" />
+    content="default-src 'self'; connect-src 'self' http://localhost:3000; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: http://localhost:3000;" />
   <link rel="stylesheet" href="../assets/main.css">
   <script>
     // Auth Check
@@ -175,15 +175,34 @@
           return;
         }
 
-        let html = '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">';
+        let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
         data.forEach(item => {
+          const fotoUrl = item.foto ? `http://localhost:3000${item.foto}` : '../assets/electron.svg';
           html += `
-              <div class="border border-slate-200 rounded-lg p-4">
-                <h4 class="font-bold text-slate-800">${item.nama}</h4>
-                <p class="text-slate-500 mt-1">Stok: ${item.stok}</p>
-                <p class="text-indigo-600 font-medium mt-1">Rp ${item.harga}</p>
+            <div class="border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-white">
+              <div class="h-48 bg-slate-100 relative">
+                <img src="${fotoUrl}" alt="${item.nama}" class="w-full h-full object-cover">
+                <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-md text-xs font-bold text-slate-700 shadow-sm">
+                  ${item.kategori || 'Umum'}
+                </div>
               </div>
-            `;
+              <div class="p-5">
+                <h4 class="font-bold text-lg text-slate-800 line-clamp-1">${item.nama}</h4>
+                <div class="flex justify-between items-center mt-2">
+                  <p class="text-indigo-600 font-bold">Rp ${item.harga.toLocaleString('id-ID')}</p>
+                  <p class="text-sm font-medium ${item.stok > 10 ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'} px-2 py-1 rounded-md">
+                    Stok: ${item.stok}
+                  </p>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <div class="flex items-center gap-2 text-slate-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                    <span class="text-xs font-mono">${item.barcode || '-'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
         });
         html += '</div>';
         document.getElementById('barangContainer').innerHTML = html;

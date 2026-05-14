@@ -6,7 +6,7 @@
     <title>Admin Dashboard - InvenSync</title>
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: http://localhost:3000;"
+      content="default-src 'self'; connect-src 'self' http://localhost:3000; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: http://localhost:3000;"
     />
     <link rel="stylesheet" href="../assets/main.css">
     <script>
@@ -159,6 +159,13 @@
           mainContent.innerHTML = '<div class="flex justify-center items-center h-full"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>';
           routes[route]().then(html => {
             mainContent.innerHTML = html;
+            
+            // Execute route specific scripts
+            if (route === 'kelola-barang') {
+              setupKelolaBarang();
+            } else if (route === 'daftar-barang') {
+              loadAdminBarang();
+            }
           });
         }
       }
@@ -179,6 +186,137 @@
       // Load initial route on startup
       const initialRoute = window.location.hash.substring(1) || 'dashboard';
       loadRoute(initialRoute);
+
+      // --- Route Specific Logic ---
+
+      function setupKelolaBarang() {
+        const btnTambah = document.getElementById('btnTambahBarang');
+        const modal = document.getElementById('modalTambahBarang');
+        const btnClose = document.getElementById('closeModalBtn');
+        const btnCancel = document.getElementById('cancelModalBtn');
+        const form = document.getElementById('formTambahBarang');
+        const errorMsg = document.getElementById('formErrorMessage');
+
+        if (!btnTambah || !modal) return;
+
+        const closeModal = () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          form.reset();
+          errorMsg.classList.add('hidden');
+        };
+
+        btnTambah.addEventListener('click', () => {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+        });
+
+        btnClose.addEventListener('click', closeModal);
+        btnCancel.addEventListener('click', closeModal);
+
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          errorMsg.classList.add('hidden');
+          
+          const submitBtn = document.getElementById('submitBarangBtn');
+          submitBtn.textContent = 'Menyimpan...';
+          submitBtn.disabled = true;
+
+          try {
+            const formData = new FormData();
+            formData.append('nama', document.getElementById('inputNama').value);
+            formData.append('harga', document.getElementById('inputHarga').value);
+            formData.append('stok', document.getElementById('inputStok').value);
+            formData.append('kategori', document.getElementById('inputKategori').value);
+            formData.append('barcode', document.getElementById('inputBarcode').value);
+            
+            const fileInput = document.getElementById('inputFoto');
+            if (fileInput.files.length > 0) {
+              formData.append('foto', fileInput.files[0]);
+            }
+
+            const res = await fetch('http://localhost:3000/api/barang', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              },
+              body: formData
+            });
+
+            const data = await res.json();
+            
+            if (res.ok) {
+              closeModal();
+              // Arahkan ke daftar barang agar admin bisa melihat barang yang baru ditambah
+              window.location.hash = 'daftar-barang';
+            } else {
+              errorMsg.textContent = data.message || 'Gagal menambahkan barang';
+              errorMsg.classList.remove('hidden');
+            }
+          } catch (err) {
+            errorMsg.textContent = 'Terjadi kesalahan jaringan.';
+            errorMsg.classList.remove('hidden');
+          } finally {
+            submitBtn.textContent = 'Simpan';
+            submitBtn.disabled = false;
+          }
+        });
+      }
+
+      async function loadAdminBarang() {
+        const container = document.getElementById('barangContainer');
+        if (!container) return;
+
+        try {
+          const res = await fetch('http://localhost:3000/api/barang', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          const data = await res.json();
+
+          if (data.length === 0) {
+            container.innerHTML = '<div class="text-center text-slate-500 py-8">Belum ada barang terdaftar.</div>';
+            return;
+          }
+
+          let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
+          data.forEach(item => {
+            const fotoUrl = item.foto ? `http://localhost:3000${item.foto}` : '../assets/electron.svg'; // fallback image
+            html += `
+              <div class="border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-white">
+                <div class="h-48 bg-slate-100 relative">
+                  <img src="${fotoUrl}" alt="${item.nama}" class="w-full h-full object-cover">
+                  <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-md text-xs font-bold text-slate-700 shadow-sm">
+                    ${item.kategori || 'Umum'}
+                  </div>
+                </div>
+                <div class="p-5">
+                  <h4 class="font-bold text-lg text-slate-800 line-clamp-1">${item.nama}</h4>
+                  <div class="flex justify-between items-center mt-2">
+                    <p class="text-indigo-600 font-bold">Rp ${item.harga.toLocaleString('id-ID')}</p>
+                    <p class="text-sm font-medium ${item.stok > 10 ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'} px-2 py-1 rounded-md">
+                      Stok: ${item.stok}
+                    </p>
+                  </div>
+                  <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-slate-500">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                      <span class="text-xs font-mono">${item.barcode || '-'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+          html += '</div>';
+          container.innerHTML = html;
+
+        } catch (error) {
+          container.innerHTML = '<div class="text-red-500 p-4 border border-red-200 bg-red-50 rounded-lg">Gagal memuat daftar barang. Terjadi kesalahan koneksi.</div>';
+        }
+      }
+
     </script>
   </body>
 </html>
