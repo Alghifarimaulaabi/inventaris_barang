@@ -86,4 +86,28 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// GET /api/barang/dashboard/stats
+router.get('/dashboard/stats', async (req, res) => {
+  try {
+    const totalBarang = await Barang.count();
+    const totalStok = await Barang.sum('stok');
+    const barangPerKategori = await Barang.findAll({
+      attributes: [
+        'kategori',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'jumlah'],
+        [sequelize.fn('SUM', sequelize.col('stok')), 'totalStok']
+      ],
+      group: ['kategori']
+    });
+    
+    res.json({
+      totalBarang,
+      totalStok,
+      barangPerKategori
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;
