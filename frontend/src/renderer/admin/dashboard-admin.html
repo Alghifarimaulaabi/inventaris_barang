@@ -35,13 +35,13 @@
           Dashboard Admin
         </a>
         <a href="#" data-route="kelola-barang" class="nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-lg font-medium text-slate-600">
-          Kelola Barang
+          Tambah Barang
         </a>
-        <a href="#" data-route="kelola-pengguna" class="nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-lg font-medium text-slate-600">
-          Kelola Pengguna
+        <a href="#" data-route="riwayat-barang" class="nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-lg font-medium text-slate-600">
+          Riwayat Barang
         </a>
         <a href="#" data-route="daftar-barang" class="nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-lg font-medium text-slate-600">
-          Daftar Barang
+          Kelola Barang
         </a>
       </nav>
       
@@ -78,15 +78,15 @@
         <div class="flex gap-6">
           <div class="flex-1 shadow-sm bg-white border border-slate-200 rounded-2xl p-6">
             <h3 class="text-slate-500 font-medium text-sm mb-1">Total Barang</h3>
-            <p class="text-3xl font-bold text-slate-900">10</p>
+            <p id="statTotalBarang" class="text-3xl font-bold text-slate-900">0</p>
           </div>
           <div class="flex-1 shadow-sm bg-white border border-slate-200 rounded-2xl p-6">
-            <h3 class="text-slate-500 font-medium text-sm mb-1">Total Pengguna</h3>
-            <p class="text-3xl font-bold text-slate-900">20</p>
+            <h3 class="text-slate-500 font-medium text-sm mb-1">Total barang masuk</h3>
+            <p id="statBarangMasuk" class="text-3xl font-bold text-slate-900">0</p>
           </div>
           <div class="flex-1 shadow-sm bg-white border border-slate-200 rounded-2xl p-6">
-            <h3 class="text-slate-500 font-medium text-sm mb-1">Total Admin</h3>
-            <p class="text-3xl font-bold text-slate-900">2</p>
+            <h3 class="text-slate-500 font-medium text-sm mb-1">Total barang keluar</h3>
+            <p id="statBarangKeluar" class="text-3xl font-bold text-slate-900">0</p>
           </div>
         </div>
 
@@ -126,11 +126,11 @@
             return '<div class="p-6 text-red-500">Gagal memuat halaman Kelola Barang. File belum ada.</div>';
           }
         },
-        'kelola-pengguna': async () => {
+        'riwayat-barang': async () => {
           try {
-            return await window.api.getPageContent('admin/kelola-pengguna');
+            return await window.api.getPageContent('admin/riwayat-barang');
           } catch(e) {
-            return '<div class="p-6 text-red-500">Gagal memuat halaman Kelola Pengguna. File belum ada.</div>';
+            return '<div class="p-6 text-red-500">Gagal memuat halaman riwayat barang. File belum ada.</div>';
           }
         },
         'daftar-barang': async () => {
@@ -161,7 +161,9 @@
             mainContent.innerHTML = html;
             
             // Execute route specific scripts
-            if (route === 'kelola-barang') {
+            if (route === 'dashboard') {
+              updateStats();
+            } else if (route === 'kelola-barang') {
               setupKelolaBarang();
             } else if (route === 'daftar-barang') {
               loadAdminBarang();
@@ -188,6 +190,26 @@
       loadRoute(initialRoute);
 
       // --- Route Specific Logic ---
+
+      async function updateStats() {
+        try {
+          const res = await fetch('http://localhost:3000/api/barang', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          
+          const totalBarang = document.getElementById('statTotalBarang');
+          const totalMasuk = document.getElementById('statBarangMasuk');
+          
+          if (totalBarang) totalBarang.textContent = data.length;
+          if (totalMasuk) {
+            const sumStok = data.reduce((acc, item) => acc + item.stok, 0);
+            totalMasuk.textContent = sumStok;
+          }
+        } catch (err) {
+          console.error("Gagal update stats:", err);
+        }
+      }
 
       function setupKelolaBarang() {
         const btnTambah = document.getElementById('btnTambahBarang');
@@ -247,7 +269,6 @@
             
             if (res.ok) {
               closeModal();
-              // Arahkan ke daftar barang agar admin bisa melihat barang yang baru ditambah
               window.location.hash = 'daftar-barang';
             } else {
               errorMsg.textContent = data.message || 'Gagal menambahkan barang';
@@ -282,16 +303,16 @@
 
           let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
           data.forEach(item => {
-            const fotoUrl = item.foto ? `http://localhost:3000${item.foto}` : '../assets/electron.svg'; // fallback image
+            const fotoUrl = item.foto ? `http://localhost:3000${item.foto}` : '../assets/electron.svg';
             html += `
-              <div class="border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-white">
+              <div class="border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-white flex flex-col">
                 <div class="h-48 bg-slate-100 relative">
                   <img src="${fotoUrl}" alt="${item.nama}" class="w-full h-full object-cover">
                   <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-md text-xs font-bold text-slate-700 shadow-sm">
                     ${item.kategori || 'Umum'}
                   </div>
                 </div>
-                <div class="p-5">
+                <div class="p-5 flex-1 flex flex-col">
                   <h4 class="font-bold text-lg text-slate-800 line-clamp-1">${item.nama}</h4>
                   <div class="flex justify-between items-center mt-2">
                     <p class="text-indigo-600 font-bold">Rp ${item.harga.toLocaleString('id-ID')}</p>
@@ -301,8 +322,15 @@
                   </div>
                   <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
                     <div class="flex items-center gap-2 text-slate-500">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
                       <span class="text-xs font-mono">${item.barcode || '-'}</span>
+                    </div>
+                    <div class="flex gap-2">
+                      <button onclick="openEditModal(${item.id}, '${item.nama}', ${item.harga}, ${item.stok}, '${item.kategori}', '${item.barcode}')" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                      </button>
+                      <button onclick="openDeleteModal(${item.id})" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -312,9 +340,130 @@
           html += '</div>';
           container.innerHTML = html;
 
+          setupEditLogic();
+          setupDeleteLogic();
+
         } catch (error) {
           container.innerHTML = '<div class="text-red-500 p-4 border border-red-200 bg-red-50 rounded-lg">Gagal memuat daftar barang. Terjadi kesalahan koneksi.</div>';
         }
+      }
+
+      // --- Global functions for buttons ---
+      window.openEditModal = (id, nama, harga, stok, kategori, barcode) => {
+        document.getElementById('editId').value = id;
+        document.getElementById('editNama').value = nama;
+        document.getElementById('editHarga').value = harga;
+        document.getElementById('editStok').value = stok;
+        document.getElementById('editKategori').value = kategori;
+        document.getElementById('editBarcode').value = barcode;
+        
+        const modal = document.getElementById('modalEditBarang');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      };
+
+      window.openDeleteModal = (id) => {
+        document.getElementById('deleteId').value = id;
+        const modal = document.getElementById('modalDeleteBarang');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      };
+
+      function setupEditLogic() {
+        const modal = document.getElementById('modalEditBarang');
+        const form = document.getElementById('formEditBarang');
+        const closeBtn = document.getElementById('closeEditModalBtn');
+        const cancelBtn = document.getElementById('cancelEditBtn');
+        const errorMsg = document.getElementById('editErrorMessage');
+
+        if (!modal) return;
+
+        const closeEditModal = () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          errorMsg.classList.add('hidden');
+        };
+
+        closeBtn.onclick = closeEditModal;
+        cancelBtn.onclick = closeEditModal;
+
+        form.onsubmit = async (e) => {
+          e.preventDefault();
+          const id = document.getElementById('editId').value;
+          const submitBtn = document.getElementById('saveEditBtn');
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Menyimpan...';
+
+          try {
+            const res = await fetch(`http://localhost:3000/api/barang/${id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                nama: document.getElementById('editNama').value,
+                harga: document.getElementById('editHarga').value,
+                stok: document.getElementById('editStok').value,
+                kategori: document.getElementById('editKategori').value,
+                barcode: document.getElementById('editBarcode').value
+              })
+            });
+
+            if (res.ok) {
+              closeEditModal();
+              loadAdminBarang();
+            } else {
+              const data = await res.json();
+              errorMsg.textContent = data.message || 'Gagal update barang';
+              errorMsg.classList.remove('hidden');
+            }
+          } catch (err) {
+            errorMsg.textContent = 'Kesalahan jaringan';
+            errorMsg.classList.remove('hidden');
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Simpan Perubahan';
+          }
+        };
+      }
+
+      function setupDeleteLogic() {
+        const modal = document.getElementById('modalDeleteBarang');
+        const cancelBtn = document.getElementById('cancelDeleteBtn');
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+
+        if (!modal) return;
+
+        const closeDeleteModal = () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        };
+
+        cancelBtn.onclick = closeDeleteModal;
+
+        confirmBtn.onclick = async () => {
+          const id = document.getElementById('deleteId').value;
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Menghapus...';
+
+          try {
+            const res = await fetch(`http://localhost:3000/api/barang/${id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+              closeDeleteModal();
+              loadAdminBarang();
+            }
+          } catch (err) {
+            alert('Gagal menghapus barang');
+          } finally {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Hapus';
+          }
+        };
       }
 
     </script>

@@ -13,9 +13,11 @@ app.use(express.urlencoded({ extended: true }));
 // router
 const barangRouter = require('./routes/barang');
 const authRouter = require('./routes/auth'); // Tambahkan rute auth
+const riwayatRouter = require('./routes/riwayat');
 
 app.use('/api/barang', barangRouter);
 app.use('/api/auth', authRouter); // Gunakan rute auth
+app.use('/api/riwayat', riwayatRouter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // ✅ path sudah defined
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // ✅ path sudah defined
 
