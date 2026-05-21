@@ -1,95 +1,4 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Dashboard - InvenSync</title>
-     <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; connect-src 'self' http://localhost:3000; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: http://localhost:3000;"
-    />
-    <link rel="stylesheet" href="../assets/main.css">
-    <!-- Chart.js dari file lokal -->
-    <script src="../assets/chart.umd.min.js"></script>
-    <!-- SweetAlert2 dari file lokal -->
-    <script src="../assets/sweetalert2.all.min.js"></script>
-    <script>
-      // Auth Check
-      const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem('user'));
-      if (!token || !user || user.role !== 'admin') {
-        window.location.href = '../login.html';
-      }
-    </script>
-  </head>
-
-  <body class="bg-slate-50 text-slate-800 font-sans antialiased flex h-screen overflow-hidden">
-    
-    <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r border-slate-200 flex-col hidden md:flex z-20">
-      <div class="h-16 flex items-center px-6 border-b border-slate-200">
-        <div class="flex items-center gap-2 text-indigo-600">
-          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-          <span class="text-xl font-bold text-slate-900 tracking-tight">Admin Panel</span>
-        </div>
-      </div>
-      
-      <nav class="flex-1 overflow-y-auto py-5 px-4 space-y-1.5" id="sidebar-nav">
-        <a href="#" data-route="dashboard" class="nav-link flex items-center gap-3 px-3 py-2.5 bg-indigo-50 text-indigo-700 rounded-lg font-medium">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-          Dashboard
-        </a>
-        <a href="#" data-route="kelola-barang" class="nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-lg font-medium text-slate-600">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-          Tambah Barang
-        </a>
-        <a href="#" data-route="barang-masuk" class="nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-lg font-medium text-slate-600">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-          Barang Masuk
-        </a>
-        <a href="#" data-route="riwayat-barang" class="nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-lg font-medium text-slate-600">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          Riwayat Semua User
-        </a>
-        <a href="#" data-route="daftar-barang" class="nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-lg font-medium text-slate-600">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-          Kelola Barang
-        </a>
-      </nav>
-      
-      <div class="p-4 border-t border-slate-200">
-        <button id="logoutBtn" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-          Keluar
-        </button>
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col h-screen overflow-hidden">
-      
-      <!-- Header -->
-      <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10">
-        <div class="flex-1">
-          <h2 class="text-lg font-semibold text-slate-800" id="headerTitle">Dashboard Admin</h2>
-        </div>
-        <div class="flex items-center gap-4">
-          <span class="text-sm font-medium text-slate-600" id="userNameDisplay">Admin</span>
-          <div class="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-            A
-          </div>
-        </div>
-      </header>
-
-      <!-- Content Area -->
-      <div id="main-content" class="flex-1 overflow-auto p-6 md:p-8 bg-slate-50/50">
-        <!-- Content will be loaded dynamically -->
-      </div>
-      
-    </main>
-
-    <script>
-            document.getElementById('userNameDisplay').textContent = user.username;
+      document.getElementById('userNameDisplay').textContent = user.username;
       
       document.getElementById('logoutBtn').addEventListener('click', () => {
         localStorage.removeItem('token');
@@ -105,7 +14,6 @@
       const pageTitles = {
         'dashboard': 'Dashboard Admin',
         'kelola-barang': 'Tambah Barang Baru',
-        'barang-masuk': 'Input Barang Masuk',
         'riwayat-barang': 'Riwayat Semua User',
         'daftar-barang': 'Kelola Barang'
       };
@@ -118,10 +26,6 @@
         'kelola-barang': async () => {
           headerTitle.textContent = pageTitles['kelola-barang'];
           return renderKelolaBarang();
-        },
-        'barang-masuk': async () => {
-          headerTitle.textContent = pageTitles['barang-masuk'];
-          return renderBarangMasuk();
         },
         'riwayat-barang': async () => {
           headerTitle.textContent = pageTitles['riwayat-barang'];
@@ -157,8 +61,6 @@
             await initDashboard();
           } else if (route === 'kelola-barang') {
             setupKelolaBarang();
-          } else if (route === 'barang-masuk') {
-            await setupBarangMasuk();
           } else if (route === 'riwayat-barang') {
             await loadAllRiwayat();
           } else if (route === 'daftar-barang') {
@@ -190,7 +92,7 @@
             
             <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
               <div class="flex items-center justify-between mb-2">
-                <h3 class="text-slate-500 font-medium text-sm">Total Barang Masuk</h3>
+                <h3 class="text-slate-500 font-medium text-sm">Total Stok Tersedia</h3>
                 <div class="p-2 bg-green-50 rounded-lg">
                   <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 </div>
@@ -239,120 +141,6 @@
             </div>
           </div>
         `;
-      }
-
-      async function renderBarangMasuk() {
-        // Ambil daftar barang untuk dropdown
-        let barangOptions = '<option value="">Pilih barang...</option>';
-        try {
-          const res = await fetch('http://localhost:3000/api/barang', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          const list = await res.json();
-          barangOptions += list.map(b =>
-            `<option value="${b.id}">${b.nama} (Stok: ${b.stok})</option>`
-          ).join('');
-        } catch (e) {
-          barangOptions = '<option value="">Gagal memuat data barang</option>';
-        }
-
-        return `
-          <div class="max-w-2xl mx-auto">
-            <div class="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
-              <div class="flex items-center gap-3 mb-6">
-                <div class="p-3 bg-green-100 rounded-xl">
-                  <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                </div>
-                <div>
-                  <h3 class="text-2xl font-bold text-slate-800">Input Barang Masuk</h3>
-                  <p class="text-sm text-slate-500">Catat penerimaan stok barang</p>
-                </div>
-              </div>
-
-              <form id="formBarangMasuk" class="space-y-5">
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1.5">Pilih Barang</label>
-                  <select id="masukBarangId" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all bg-white">
-                    ${barangOptions}
-                  </select>
-                </div>
-
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1.5">Jumlah Masuk</label>
-                  <input type="number" id="masukJumlah" min="1" required
-                    class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                    placeholder="Masukkan jumlah barang yang masuk">
-                </div>
-
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1.5">Keterangan</label>
-                  <input type="text" id="masukKeterangan" required
-                    class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                    placeholder="Contoh: Pembelian dari supplier">
-                </div>
-
-                <div id="masukErrorMessage" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"></div>
-                <div id="masukSuccessMessage" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm"></div>
-
-                <button type="submit" id="submitMasukBtn"
-                  class="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors shadow-lg shadow-green-200">
-                  Catat Barang Masuk
-                </button>
-              </form>
-            </div>
-          </div>
-        `;
-      }
-
-      async function setupBarangMasuk() {
-        const form = document.getElementById('formBarangMasuk');
-        const errorMsg = document.getElementById('masukErrorMessage');
-        const successMsg = document.getElementById('masukSuccessMessage');
-        if (!form) return;
-
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          errorMsg.classList.add('hidden');
-          successMsg.classList.add('hidden');
-
-          const submitBtn = document.getElementById('submitMasukBtn');
-          submitBtn.textContent = 'Menyimpan...';
-          submitBtn.disabled = true;
-
-          const barangId = document.getElementById('masukBarangId').value;
-          const jumlah  = document.getElementById('masukJumlah').value;
-          const keterangan = document.getElementById('masukKeterangan').value;
-
-          try {
-            const res = await fetch('http://localhost:3000/api/riwayat/masuk', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify({ barangId, jumlah, keterangan })
-            });
-
-            const result = await res.json();
-
-            if (res.ok) {
-              form.reset();
-              successMsg.textContent = `✅ Berhasil mencatat ${jumlah} unit barang masuk!`;
-              successMsg.classList.remove('hidden');
-              // Reload dropdown dengan stok terbaru
-              await setupBarangMasuk();
-            } else {
-              errorMsg.textContent = result.message || 'Gagal mencatat barang masuk';
-              errorMsg.classList.remove('hidden');
-            }
-          } catch (err) {
-            errorMsg.textContent = 'Terjadi kesalahan jaringan.';
-            errorMsg.classList.remove('hidden');
-          } finally {
-            submitBtn.textContent = 'Catat Barang Masuk';
-            submitBtn.disabled = false;
-          }
-        });
       }
 
       async function renderKelolaBarang() {
@@ -476,11 +264,8 @@
 
       async function updateStats() {
         try {
-          const [barangRes, masukRes, keluarRes] = await Promise.all([
+          const [barangRes, keluarRes] = await Promise.all([
             fetch('http://localhost:3000/api/barang', {
-              headers: { 'Authorization': `Bearer ${token}` }
-            }),
-            fetch('http://localhost:3000/api/riwayat/stats/total-masuk', {
               headers: { 'Authorization': `Bearer ${token}` }
             }),
             fetch('http://localhost:3000/api/riwayat/stats/total-keluar', {
@@ -489,11 +274,10 @@
           ]);
           
           const barang = await barangRes.json();
-          const masuk = await masukRes.json();
           const keluar = await keluarRes.json();
           
           document.getElementById('statTotalBarang').textContent = barang.length;
-          document.getElementById('statBarangMasuk').textContent = masuk.totalMasuk;
+          document.getElementById('statBarangMasuk').textContent = barang.reduce((acc, item) => acc + item.stok, 0);
           document.getElementById('statBarangKeluar').textContent = keluar.totalKeluar;
         } catch (err) {
           console.error("Gagal update stats:", err);
@@ -524,10 +308,7 @@ async function loadMasukKeluarChart() {
     const dateMap = {};
     
     data.forEach(item => {
-      // Ambil field tanggal — alias bisa berbeda tergantung versi driver
-      const date = item.tanggal || item['DATE(`createdAt`)'] || item['DATE(createdAt)'];
-      if (!date) return; // skip jika tanggal tidak terbaca
-      
+      const date = item.tanggal;
       if (!dateMap[date]) {
         dateMap[date] = { masuk: 0, keluar: 0 };
       }
@@ -554,15 +335,7 @@ async function loadMasukKeluarChart() {
       data: {
         labels: dates.map(d => {
           try {
-            const parts = d.split('-');
-            if (parts.length === 3) {
-              const year = parseInt(parts[0], 10);
-              const month = parseInt(parts[1], 10) - 1;
-              const day = parseInt(parts[2], 10);
-              const dateObj = new Date(year, month, day);
-              return dateObj.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' });
-            }
-            return d;
+            return new Date(d).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' });
           } catch (e) {
             return d;
           }
@@ -601,7 +374,7 @@ async function loadMasukKeluarChart() {
           },
           title: {
             display: dates.length === 0,
-            text: 'Belum ada data barang keluar/masuk'
+            text: 'Belum ada data barang masuk/keluar'
           }
         },
         scales: {
@@ -832,13 +605,7 @@ function showEmptyChart() {
 
             if (res.ok) {
               form.reset();
-              Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: 'Barang berhasil ditambahkan!',
-                confirmButtonColor: '#4f46e5'
-              });
-              await updateStats();
+              alert('✅ Barang berhasil ditambahkan!');
             } else {
               const data = await res.json();
               errorMsg.textContent = data.message || 'Gagal menambahkan barang';
@@ -892,10 +659,10 @@ function showEmptyChart() {
                     <span class="text-xs font-mono text-slate-500">${item.barcode || '-'}</span>
                     <div class="flex gap-2">
                       <button onclick="openEditModal(${item.id}, '${item.nama}', ${item.harga}, ${item.stok}, '${item.kategori}', '${item.barcode}')" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-                        Edit
+                        ✏️
                       </button>
                       <button onclick="openDeleteModal(${item.id})" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                        Hapus
+                        🗑️
                       </button>
                     </div>
                   </div>
@@ -905,6 +672,7 @@ function showEmptyChart() {
           }).join('');
 
           setupEditLogic();
+          setupDeleteLogic();
         } catch (error) {
           container.innerHTML = '<div class="col-span-full text-red-500 p-4 bg-red-50 rounded-lg">Gagal memuat daftar barang.</div>';
         }
@@ -924,51 +692,9 @@ function showEmptyChart() {
       };
 
       window.openDeleteModal = (id) => {
-        Swal.fire({
-          title: 'Hapus Barang?',
-          text: 'Data barang yang dihapus tidak dapat dikembalikan.',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#ef4444',
-          cancelButtonColor: '#64748b',
-          confirmButtonText: 'Ya, hapus!',
-          cancelButtonText: 'Batal'
-        }).then(async (result) => {
-          if (result.isConfirmed) {
-            try {
-              const res = await fetch(`http://localhost:3000/api/barang/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-              });
-
-              if (res.ok) {
-                Swal.fire({
-                  icon: 'success',
-                  title: 'Dihapus!',
-                  text: 'Barang berhasil dihapus.',
-                  confirmButtonColor: '#4f46e5'
-                });
-                await loadAdminBarang();
-                await updateStats();
-              } else {
-                const data = await res.json();
-                Swal.fire({
-                  icon: 'error',
-                  title: 'Gagal!',
-                  text: data.message || 'Gagal menghapus barang.',
-                  confirmButtonColor: '#4f46e5'
-                });
-              }
-            } catch (err) {
-              Swal.fire({
-                icon: 'error',
-                title: 'Gagal!',
-                text: 'Terjadi kesalahan jaringan.',
-                confirmButtonColor: '#4f46e5'
-              });
-            }
-          }
-        });
+        document.getElementById('deleteId').value = id;
+        document.getElementById('modalDeleteBarang').classList.remove('hidden');
+        document.getElementById('modalDeleteBarang').classList.add('flex');
       };
 
       function setupEditLogic() {
@@ -1011,14 +737,7 @@ function showEmptyChart() {
 
             if (res.ok) {
               closeEditModal();
-              Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: 'Data barang berhasil diubah.',
-                confirmButtonColor: '#4f46e5'
-              });
               await loadAdminBarang();
-              await updateStats();
             } else {
               const data = await res.json();
               errorMsg.textContent = data.message || 'Gagal update';
@@ -1029,6 +748,41 @@ function showEmptyChart() {
             errorMsg.classList.remove('hidden');
           } finally {
             submitBtn.disabled = false;
+          }
+        };
+      }
+
+      function setupDeleteLogic() {
+        const modal = document.getElementById('modalDeleteBarang');
+        const cancelBtn = document.getElementById('cancelDeleteBtn');
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+
+        if (!modal) return;
+
+        cancelBtn.onclick = () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        };
+
+        confirmBtn.onclick = async () => {
+          const id = document.getElementById('deleteId').value;
+          confirmBtn.disabled = true;
+
+          try {
+            const res = await fetch(`http://localhost:3000/api/barang/${id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+              modal.classList.add('hidden');
+              modal.classList.remove('flex');
+              await loadAdminBarang();
+            }
+          } catch (err) {
+            alert('Gagal menghapus barang');
+          } finally {
+            confirmBtn.disabled = false;
           }
         };
       }
@@ -1050,7 +804,3 @@ function showEmptyChart() {
       // Load initial route
       const initialRoute = window.location.hash.substring(1) || 'dashboard';
       loadRoute(initialRoute);
-
-    </script>
-  </body>
-</html>

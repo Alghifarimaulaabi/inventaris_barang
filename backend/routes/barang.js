@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Barang } = require('../models');
+const { authenticateToken } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 
@@ -38,7 +39,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST new barang
-router.post('/', upload.single('foto'), async (req, res) => {
+router.post('/', authenticateToken, upload.single('foto'), async (req, res) => {
   try {
     const { nama, stok, harga, kategori, barcode } = req.body;
     let foto = req.body.foto || null;
@@ -46,14 +47,30 @@ router.post('/', upload.single('foto'), async (req, res) => {
       foto = '/uploads/' + req.file.filename;
     }
     
+    const qty = parseInt(stok, 10) || 0;
+    const price = parseInt(harga, 10) || 0;
+
     const barang = await Barang.create({
       nama,
-      stok,
-      harga,
+      stok: qty,
+      harga: price,
       kategori,
       barcode,
       foto
     });
+
+    if (qty > 0) {
+      const { Riwayat } = require('../models');
+      await Riwayat.create({
+        barangId: barang.id,
+        namaBarang: barang.nama,
+        jumlah: qty,
+        tipe: 'masuk',
+        keterangan: 'Stok awal barang baru',
+        username: req.user.username
+      });
+    }
+
     res.status(201).json(barang);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -61,12 +78,29 @@ router.post('/', upload.single('foto'), async (req, res) => {
 });
 
 // PUT update barang
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const barang = await Barang.findByPk(req.params.id);
     if (!barang) return res.status(404).json({ message: 'Barang tidak ditemukan' });
     
+    const oldStok = barang.stok;
+    const newStok = req.body.stok !== undefined ? parseInt(req.body.stok, 10) : oldStok;
+
     await barang.update(req.body);
+
+    if (newStok !== oldStok) {
+      const diff = newStok - oldStok;
+      const { Riwayat } = require('../models');
+      await Riwayat.create({
+        barangId: barang.id,
+        namaBarang: barang.nama,
+        jumlah: Math.abs(diff),
+        tipe: diff > 0 ? 'masuk' : 'keluar',
+        keterangan: req.body.keterangan || (diff > 0 ? 'Penambahan stok via edit' : 'Pengurangan stok via edit'),
+        username: req.user.username
+      });
+    }
+
     res.json(barang);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -74,7 +108,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE barang
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const barang = await Barang.findByPk(req.params.id);
     if (!barang) return res.status(404).json({ message: 'Barang tidak ditemukan' });

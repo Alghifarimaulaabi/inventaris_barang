@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Barang, Riwayat, sequelize } = require('../models');
 const { authenticateToken } = require('../middleware/auth');
-const { Op } = require('sequelize');
+const { Op, literal, fn, col } = require('sequelize');
 
 // GET all riwayat
 router.get('/', authenticateToken, async (req, res) => {
@@ -86,6 +86,57 @@ router.post('/keluar', authenticateToken, async (req, res) => {
   }
 });
 
+    router.post('/masuk', authenticateToken, async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const { barangId, jumlah, keterangan } = req.body;
+
+    const qty = parseInt(jumlah);
+
+    const barang = await Barang.findByPk(barangId, { transaction });
+
+    if (!barang) {
+      await transaction.rollback();
+      return res.status(404).json({
+        message: 'Barang tidak ditemukan'
+      });
+    }
+
+    // tambah stok
+    await barang.update({
+      stok: barang.stok + qty
+    }, { transaction });
+
+    // simpan riwayat
+    const riwayat = await Riwayat.create({
+      barangId: barang.id,
+      namaBarang: barang.nama,
+      jumlah: qty,
+      tipe: 'masuk',
+      keterangan,
+      username: req.user.username
+    }, { transaction });
+
+    await transaction.commit();
+
+    res.status(201).json({
+      message: 'Barang masuk berhasil',
+      riwayat
+    });
+
+  } catch (error) {
+    await transaction.rollback();
+
+    console.error(error);
+
+    res.status(500).json({
+      message: error.message
+    });
+  }
+});
+
+
 // GET total barang keluar
 router.get('/stats/total-keluar', authenticateToken, async (req, res) => {
   try {
@@ -100,32 +151,57 @@ router.get('/stats/total-keluar', authenticateToken, async (req, res) => {
   }
 });
 
+// GET total barang masuk
+router.get('/stats/total-masuk', authenticateToken, async (req, res) => {
+  try {
+    const totalMasuk = await Riwayat.sum('jumlah', {
+      where: { tipe: 'masuk' }
+    });
+    
+    res.json({ totalMasuk: totalMasuk || 0 });
+  } catch (error) {
+    console.error('Error GET /stats/total-masuk:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // GET statistik chart (masuk vs keluar)
 router.get('/stats/chart', authenticateToken, async (req, res) => {
   try {
-    const { range = '7' } = req.query;
-    
-    // Cek apakah ada data riwayat
-    const count = await Riwayat.count();
-    
+    const rangeDay = parseInt(req.query.range) || 7;
+
+    // Hitung batas tanggal mulai
+    const dateStart = new Date();
+    dateStart.setDate(dateStart.getDate() - rangeDay);
+    dateStart.setHours(0, 0, 0, 0);
+
+    // Cek apakah ada data riwayat dalam rentang
+    const count = await Riwayat.count({
+      where: { createdAt: { [Op.gte]: dateStart } }
+    });
+
     // Jika tidak ada data, kirim array kosong
     if (count === 0) {
       return res.json([]);
     }
-    
-    // Gunakan query yang lebih sederhana dan kompatibel
+
     const riwayat = await Riwayat.findAll({
       attributes: [
-        [sequelize.literal("DATE(createdAt)"), 'tanggal'],
+        [fn('DATE', col('createdAt')), 'tanggal'],
         'tipe',
-        [sequelize.fn('SUM', sequelize.col('jumlah')), 'totalJumlah']
+        [fn('SUM', col('jumlah')), 'totalJumlah']
       ],
-      where: sequelize.literal(`createdAt >= DATE('now', '-${range} days')`),
-      group: ['tanggal', 'tipe'],
-      order: [[sequelize.literal("DATE(createdAt)"), 'ASC']],
+      where: {
+        createdAt: { [Op.gte]: dateStart }
+      },
+      group: [
+        fn('DATE', col('createdAt')),
+        'tipe'
+      ],
+      order: [[fn('DATE', col('createdAt')), 'ASC']],
       raw: true
     });
-    
+
     console.log('Chart data:', riwayat); // Debug
     res.json(riwayat);
   } catch (error) {

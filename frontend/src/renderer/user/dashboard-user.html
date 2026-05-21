@@ -8,6 +8,8 @@
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'self'; connect-src 'self' http://localhost:3000; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: http://localhost:3000;" />
   <link rel="stylesheet" href="../assets/main.css">
+  <!-- SweetAlert2 dari file lokal -->
+  <script src="../assets/sweetalert2.all.min.js"></script>
   <script>
     // Auth Check
     const token = localStorage.getItem('token');
@@ -363,18 +365,35 @@
         const data = await res.json();
         
         if (!res.ok) {
-          alert(data.message || 'Gagal menyimpan transaksi barang keluar.');
+          Swal.fire({
+            icon: 'error',
+            title: 'Gagal!',
+            text: data.message || 'Gagal menyimpan transaksi barang keluar.',
+            confirmButtonColor: '#4f46e5'
+          });
           return;
         }
         
         // Success
         closeKeluarModal();
         
-        // Redirect to riwayat
-        window.location.hash = 'riwayat';
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: 'Transaksi barang keluar berhasil disimpan.',
+          confirmButtonColor: '#4f46e5'
+        }).then(() => {
+          // Redirect to riwayat
+          window.location.hash = 'riwayat';
+        });
       } catch (err) {
         console.error('Error submitting barang keluar:', err);
-        alert('Terjadi kesalahan koneksi ke server.');
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal!',
+          text: 'Terjadi kesalahan koneksi ke server.',
+          confirmButtonColor: '#4f46e5'
+        });
       }
     });
 
