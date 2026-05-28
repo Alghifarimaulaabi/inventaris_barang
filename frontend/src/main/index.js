@@ -41,7 +41,7 @@ let serverProcess = null;
 function startExpressServer() {
   // Dalam development, backend ada di root project. Dalam production, ada di resources/backend.
   const backendPath = is.dev
-    ? join(__dirname, '../../../../backend/index.js')
+    ? join(__dirname, '../../../backend/index.js')
     : join(process.resourcesPath, 'backend', 'index.js');
   
   // Karena kita ingin menjalankan node, kita set ELECTRON_RUN_AS_NODE

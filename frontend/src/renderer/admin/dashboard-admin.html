@@ -12,7 +12,10 @@
     <!-- Chart.js dari file lokal -->
     <script type="module" src="../assets/chart.umd.min.js"></script>
     <!-- SweetAlert2 dari file lokal -->
-    <script src="../assets/sweetalert2.all.min.js"></script>
+    <script type="module">
+      import Swal from 'sweetalert2'
+      window.Swal = Swal;
+    </script>
     <script>
       // Auth Check
       const token = localStorage.getItem('token');

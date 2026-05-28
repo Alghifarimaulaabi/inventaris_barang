@@ -9,7 +9,10 @@
     content="default-src 'self'; connect-src 'self' http://localhost:3000; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: http://localhost:3000;" />
   <link rel="stylesheet" href="../assets/main.css">
   <!-- SweetAlert2 dari file lokal -->
-  <script src="../assets/sweetalert2.all.min.js"></script>
+  <script type="module">
+    import Swal from 'sweetalert2'
+    window.Swal = Swal;
+  </script>
   <script>
     // Auth Check
     const token = localStorage.getItem('token');
