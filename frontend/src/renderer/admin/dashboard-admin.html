@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -10,7 +10,7 @@
     />
     <link rel="stylesheet" href="../assets/main.css">
     <!-- Chart.js dari file lokal -->
-    <script src="../assets/chart.umd.min.js"></script>
+    <script type="module" src="../assets/chart.umd.min.js"></script>
     <!-- SweetAlert2 dari file lokal -->
     <script src="../assets/sweetalert2.all.min.js"></script>
     <script>
@@ -348,6 +348,12 @@
 
       async function renderDaftarBarang() {
         return `
+          <div class="mb-6 flex flex-col sm:flex-row gap-4">
+            <input type="text" id="searchAdminBarang" placeholder="Cari nama barang..." class="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+            <select id="filterAdminKategori" class="w-full sm:w-48 px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none bg-white">
+              <option value="">Semua Kategori</option>
+            </select>
+          </div>
           <div id="barangContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="col-span-full flex justify-center py-8">
               <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -781,6 +787,7 @@ function showEmptyChart() {
       }
 
       // DAFTAR BARANG
+      let adminBarangData = [];
       async function loadAdminBarang() {
         const container = document.getElementById('barangContainer');
         if (!container) return;
@@ -789,51 +796,80 @@ function showEmptyChart() {
           const res = await fetch('http://localhost:3000/api/barang', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          const data = await res.json();
+          adminBarangData = await res.json();
 
-          if (data.length === 0) {
-            container.innerHTML = '<div class="col-span-full text-center text-slate-500 py-8">Belum ada barang terdaftar.</div>';
-            return;
+          const selectKategori = document.getElementById('filterAdminKategori');
+          if (selectKategori && selectKategori.options.length <= 1) {
+            const kategories = [...new Set(adminBarangData.map(item => item.kategori).filter(Boolean))];
+            kategories.forEach(kat => {
+              const opt = document.createElement('option');
+              opt.value = kat;
+              opt.textContent = kat;
+              selectKategori.appendChild(opt);
+            });
+            
+            document.getElementById('searchAdminBarang')?.addEventListener('input', renderAdminBarangList);
+            selectKategori.addEventListener('change', renderAdminBarangList);
           }
 
-          container.innerHTML = data.map(item => {
-            const fotoUrl = item.foto ? `http://localhost:3000${item.foto}` : 'https://via.placeholder.com/300x200?text=No+Image';
-            return `
-              <div class="border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-white flex flex-col">
-                <div class="h-48 bg-slate-100 relative">
-                  <img src="${fotoUrl}" alt="${item.nama}" class="w-full h-full object-cover">
-                  <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-md text-xs font-bold text-slate-700 shadow-sm">
-                    ${item.kategori || 'Umum'}
-                  </div>
-                </div>
-                <div class="p-5 flex-1 flex flex-col">
-                  <h4 class="font-bold text-lg text-slate-800 line-clamp-1">${item.nama}</h4>
-                  <div class="flex justify-between items-center mt-2">
-                    <p class="text-indigo-600 font-bold">Rp ${item.harga.toLocaleString('id-ID')}</p>
-                    <p class="text-sm font-medium ${item.stok > 10 ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'} px-2 py-1 rounded-md">
-                      Stok: ${item.stok}
-                    </p>
-                  </div>
-                  <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                    <span class="text-xs font-mono text-slate-500">${item.barcode || '-'}</span>
-                    <div class="flex gap-2">
-                      <button onclick="openEditModal(${item.id}, '${item.nama}', ${item.harga}, ${item.stok}, '${item.kategori}', '${item.barcode}')" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-                        Edit
-                      </button>
-                      <button onclick="openDeleteModal(${item.id})" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                        Hapus
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            `;
-          }).join('');
-
+          renderAdminBarangList();
           setupEditLogic();
         } catch (error) {
           container.innerHTML = '<div class="col-span-full text-red-500 p-4 bg-red-50 rounded-lg">Gagal memuat daftar barang.</div>';
         }
+      }
+
+      function renderAdminBarangList() {
+        const container = document.getElementById('barangContainer');
+        if (!container) return;
+        
+        const searchQuery = document.getElementById('searchAdminBarang')?.value.toLowerCase() || '';
+        const filterKat = document.getElementById('filterAdminKategori')?.value || '';
+        
+        const filteredData = adminBarangData.filter(item => {
+          const matchSearch = item.nama.toLowerCase().includes(searchQuery);
+          const matchKat = filterKat === '' || item.kategori === filterKat;
+          return matchSearch && matchKat;
+        });
+
+        if (filteredData.length === 0) {
+          container.innerHTML = '<div class="col-span-full text-center text-slate-500 py-8">Barang tidak ditemukan.</div>';
+          return;
+        }
+
+        container.innerHTML = filteredData.map(item => {
+          const fotoUrl = item.foto ? `http://localhost:3000${item.foto}` : 'https://via.placeholder.com/300x200?text=No+Image';
+          return `
+            <div class="border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-white flex flex-col">
+              <div class="h-48 bg-slate-100 relative">
+                <img src="${fotoUrl}" alt="${item.nama}" class="w-full h-full object-cover">
+                <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-md text-xs font-bold text-slate-700 shadow-sm">
+                  ${item.kategori || 'Umum'}
+                </div>
+              </div>
+              <div class="p-5 flex-1 flex flex-col">
+                <h4 class="font-bold text-lg text-slate-800 line-clamp-1">${item.nama}</h4>
+                <div class="flex justify-between items-center mt-2">
+                  <p class="text-indigo-600 font-bold">Rp ${item.harga.toLocaleString('id-ID')}</p>
+                  <p class="text-sm font-medium ${item.stok > 10 ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'} px-2 py-1 rounded-md">
+                    Stok: ${item.stok}
+                  </p>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <span class="text-xs font-mono text-slate-500">${item.barcode || '-'}</span>
+                  <div class="flex gap-2">
+                    <button onclick="openEditModal(${item.id}, '${item.nama}', ${item.harga}, ${item.stok}, '${item.kategori}', '${item.barcode}')" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                      Edit
+                    </button>
+                    <button onclick="openDeleteModal(${item.id})" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
       }
 
       // EDIT & DELETE LOGIC

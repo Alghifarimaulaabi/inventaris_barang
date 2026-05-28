@@ -2,6 +2,13 @@
   <h2 class="text-2xl font-bold text-slate-800 mb-4">Lihat Barang</h2>
   <p class="text-slate-500 mb-6">Daftar semua inventaris barang.</p>
   
+  <div class="mb-6 flex flex-col sm:flex-row gap-4">
+    <input type="text" id="searchUserBarang" placeholder="Cari nama barang..." class="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+    <select id="filterUserKategori" class="w-full sm:w-48 px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none bg-white">
+      <option value="">Semua Kategori</option>
+    </select>
+  </div>
+
   <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
     <div id="barangContainer" class="text-sm text-slate-500">Memuat data barang...</div>
   </div>

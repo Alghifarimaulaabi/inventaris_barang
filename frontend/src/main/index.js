@@ -36,12 +36,37 @@ function createWindow() {
   }
 }
 
+let serverProcess = null;
+
+function startExpressServer() {
+  // Dalam development, backend ada di root project. Dalam production, ada di resources/backend.
+  const backendPath = is.dev
+    ? join(__dirname, '../../../../backend/index.js')
+    : join(process.resourcesPath, 'backend', 'index.js');
+  
+  // Karena kita ingin menjalankan node, kita set ELECTRON_RUN_AS_NODE
+  serverProcess = require('child_process').fork(backendPath, [], {
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
+  });
+
+  serverProcess.on('error', (err) => {
+    console.error('Failed to start Express server:', err);
+  });
+  
+  serverProcess.on('exit', (code) => {
+    console.log(`Express server exited with code ${code}`);
+  });
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
+  
+  // Start the Express backend
+  startExpressServer();
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
@@ -91,6 +116,12 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
+  }
+})
+
+app.on('will-quit', () => {
+  if (serverProcess) {
+    serverProcess.kill();
   }
 })
 

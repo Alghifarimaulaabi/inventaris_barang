@@ -137,13 +137,64 @@
   </div>
 
   <script>
+
+    // Logout dengan SweetAlert
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        const result = await Swal.fire({
+          title: 'Konfirmasi Logout',
+          text: 'Apakah Anda yakin ingin keluar dari dashboard?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#64748b',
+          confirmButtonText: 'Ya, Keluar',
+          cancelButtonText: 'Batal',
+          reverseButtons: true,
+          customClass: {
+            popup: 'rounded-2xl',
+            title: 'text-xl font-bold',
+            confirmButton: 'px-4 py-2 text-sm font-medium',
+            cancelButton: 'px-4 py-2 text-sm font-medium'
+          }
+        });
+
+        if (result.isConfirmed) {
+          // Menampilkan loading toast
+          Swal.fire({
+            title: 'Logging out...',
+            text: 'Mohon tunggu sebentar',
+            icon: 'info',
+            showConfirmButton: false,
+            allowOutsideClick: false,
+            didOpen: () => {
+              Swal.showLoading();
+            }
+          });
+
+          // Simulasi delay sedikit untuk memberikan efek loading
+          setTimeout(() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            
+            Swal.fire({
+              title: 'Berhasil Logout!',
+              text: 'Anda akan dialihkan ke halaman login',
+              icon: 'success',
+              confirmButtonColor: '#4f46e5',
+              confirmButtonText: 'OK',
+              timer: 2000,
+              timerProgressBar: true,
+              didClose: () => {
+                window.location.href = '../login.html';
+              }
+            });
+          }, 500);
+        }
+      });
+
     document.getElementById('userNameDisplay').textContent = user.username;
 
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '../login.html';
-    });
+
 
     // Sistem Routing SPA (Single Page Application)
     const navLinks = document.querySelectorAll('.nav-link');
@@ -223,6 +274,8 @@
       });
     });
 
+    let userBarangData = [];
+
     // Simple fetch for user to just see items
     async function loadBarang() {
       try {
@@ -231,53 +284,83 @@
             'Authorization': `Bearer ${token}`
           }
         });
-        const data = await res.json();
-
-        if (data.length === 0) {
-          document.getElementById('barangContainer').innerHTML = 'Belum ada barang.';
-          return;
+        userBarangData = await res.json();
+        
+        const selectKategori = document.getElementById('filterUserKategori');
+        if (selectKategori && selectKategori.options.length <= 1) {
+          const kategories = [...new Set(userBarangData.map(item => item.kategori).filter(Boolean))];
+          kategories.forEach(kat => {
+            const opt = document.createElement('option');
+            opt.value = kat;
+            opt.textContent = kat;
+            selectKategori.appendChild(opt);
+          });
+          
+          document.getElementById('searchUserBarang')?.addEventListener('input', renderUserBarangList);
+          selectKategori.addEventListener('change', renderUserBarangList);
         }
 
-        let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
-        data.forEach(item => {
-          const fotoUrl = item.foto ? `http://localhost:3000${item.foto}` : '../assets/electron.svg';
-          html += `
-            <div class="border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-white">
-              <div class="h-48 bg-slate-100 relative">
-                <img src="${fotoUrl}" alt="${item.nama}" class="w-full h-full object-cover">
-                <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-md text-xs font-bold text-slate-700 shadow-sm">
-                  ${item.kategori || 'Umum'}
-                </div>
-              </div>
-              <div class="p-5">
-                <h4 class="font-bold text-lg text-slate-800 line-clamp-1">${item.nama}</h4>
-                <div class="flex justify-between items-center mt-2">
-                  <p class="text-indigo-600 font-bold">Rp ${item.harga.toLocaleString('id-ID')}</p>
-                  <p class="text-sm font-medium ${item.stok > 10 ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'} px-2 py-1 rounded-md">
-                    Stok: ${item.stok}
-                  </p>
-                </div>
-                <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <div class="flex items-center gap-2 text-slate-500">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-                    <span class="text-xs font-mono">${item.barcode || '-'}</span>
-                  </div>
-                  <button onclick="openKeluarModal(${item.id}, '${item.nama.replace(/'/g, "\\'")}', ${item.stok})" class="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer border-none">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Barang Keluar
-                  </button>
-                </div>              </div>
-            </div>
-          `;
-        });
-        html += '</div>';
-        document.getElementById('barangContainer').innerHTML = html;
+        renderUserBarangList();
 
       } catch (error) {
         document.getElementById('barangContainer').innerHTML = 'Gagal memuat barang.';
       }
+    }
+
+    function renderUserBarangList() {
+      const container = document.getElementById('barangContainer');
+      if (!container) return;
+      
+      const searchQuery = document.getElementById('searchUserBarang')?.value.toLowerCase() || '';
+      const filterKat = document.getElementById('filterUserKategori')?.value || '';
+      
+      const filteredData = userBarangData.filter(item => {
+        const matchSearch = item.nama.toLowerCase().includes(searchQuery);
+        const matchKat = filterKat === '' || item.kategori === filterKat;
+        return matchSearch && matchKat;
+      });
+
+      if (filteredData.length === 0) {
+        container.innerHTML = '<div class="text-center text-slate-500 py-8">Barang tidak ditemukan.</div>';
+        return;
+      }
+
+      let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
+      filteredData.forEach(item => {
+        const fotoUrl = item.foto ? `http://localhost:3000${item.foto}` : '../assets/electron.svg';
+        html += `
+          <div class="border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-white flex flex-col">
+            <div class="h-48 bg-slate-100 relative">
+              <img src="${fotoUrl}" alt="${item.nama}" class="w-full h-full object-cover">
+              <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-md text-xs font-bold text-slate-700 shadow-sm">
+                ${item.kategori || 'Umum'}
+              </div>
+            </div>
+            <div class="p-5 flex-1 flex flex-col">
+              <h4 class="font-bold text-lg text-slate-800 line-clamp-1">${item.nama}</h4>
+              <div class="flex justify-between items-center mt-2">
+                <p class="text-indigo-600 font-bold">Rp ${item.harga.toLocaleString('id-ID')}</p>
+                <p class="text-sm font-medium ${item.stok > 10 ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'} px-2 py-1 rounded-md">
+                  Stok: ${item.stok}
+                </p>
+              </div>
+              <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-2 text-slate-500">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                  <span class="text-xs font-mono">${item.barcode || '-'}</span>
+                </div>
+                <button onclick="openKeluarModal(${item.id}, '${item.nama.replace(/'/g, "\\'")}', ${item.stok})" class="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer border-none">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Barang Keluar
+                </button>
+              </div>              </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
     }
 
     // Modal & Outgoing Goods Features
