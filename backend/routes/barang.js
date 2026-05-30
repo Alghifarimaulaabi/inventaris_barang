@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Barang } = require('../models');
+const { Barang, sequelize } = require('../models');
 const { authenticateToken } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');

@@ -11,7 +11,9 @@
   <!-- SweetAlert2 dari file lokal -->
   <script type="module">
     import Swal from 'sweetalert2'
+    import Chart from 'chart.js/auto'
     window.Swal = Swal;
+    window.Chart = Chart;
   </script>
   <script>
     // Auth Check
@@ -44,9 +46,6 @@
       </a>
       <a href="#" data-route="lihat-barang" class="nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-lg font-medium text-slate-600">
         Data Barang
-      </a>
-      <a href="#" data-route="kategori" class="nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-lg font-medium text-slate-600">
-        Kategori
       </a>
       <a href="#" data-route="riwayat" class="nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-lg font-medium text-slate-600">
         Riwayat
@@ -210,6 +209,7 @@
           setTimeout(() => {
             const welcome = document.getElementById('welcomeName');
             if (welcome) welcome.textContent = user.username;
+            if (typeof loadUserDashboard === 'function') loadUserDashboard();
           }, 50);
           return content;
         } catch(e) {
@@ -584,6 +584,224 @@
       
       container.innerHTML = html;
     }
+
+    // User Dashboard Logic
+    let dashboardChartInstance = null;
+
+    window.loadUserDashboard = async function() {
+      try {
+        // 1. Fetch Dashboard Stats and Barang
+        const [statsRes, barangRes] = await Promise.all([
+          fetch('http://localhost:3000/api/barang/dashboard/stats', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('http://localhost:3000/api/barang', { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+        
+        const statsData = await statsRes.json();
+        const barangData = await barangRes.json();
+        
+        const outOfStock = barangData.filter(b => b.stok <= 0).length;
+        
+        if(document.getElementById('statTotalBarang')) document.getElementById('statTotalBarang').textContent = statsData.totalBarang || 0;
+        if(document.getElementById('statTotalKategori')) document.getElementById('statTotalKategori').textContent = (statsData.barangPerKategori || []).length;
+        if(document.getElementById('statStokHabis')) document.getElementById('statStokHabis').textContent = outOfStock;
+
+        // 2. Fetch Stok Tipis
+        const tipisRes = await fetch('http://localhost:3000/api/riwayat/stats/stok-tipis', { headers: { 'Authorization': `Bearer ${token}` } });
+        const tipisData = await tipisRes.json();
+        const tipisContainer = document.getElementById('stokTipisList');
+        if (tipisContainer) {
+          if (tipisData.length === 0) {
+            tipisContainer.innerHTML = '<div class="text-sm text-slate-500 italic p-3 bg-slate-50 rounded-xl">Stok barang aman semua.</div>';
+          } else {
+            tipisContainer.innerHTML = tipisData.map(item => `
+              <div class="flex justify-between items-center p-3 rounded-xl border border-rose-100 bg-rose-50/50 hover:bg-rose-50 transition-colors">
+                <div class="flex-1 truncate pr-3">
+                  <h4 class="text-sm font-bold text-slate-800 truncate">${item.nama}</h4>
+                  <p class="text-xs text-slate-500">${item.kategori || '-'}</p>
+                </div>
+                <div class="bg-white px-2.5 py-1 rounded-lg border border-rose-200 text-rose-600 font-bold text-xs whitespace-nowrap shadow-sm">
+                  Stok: ${item.stok}
+                </div>
+              </div>
+            `).join('');
+          }
+        }
+
+        // 3. Fetch Top Keluar
+        const topKeluarRes = await fetch('http://localhost:3000/api/riwayat/stats/top-keluar', { headers: { 'Authorization': `Bearer ${token}` } });
+        const topKeluarData = await topKeluarRes.json();
+        const topKeluarContainer = document.getElementById('topKeluarList');
+        if (topKeluarContainer) {
+          if (topKeluarData.length === 0) {
+            topKeluarContainer.innerHTML = '<div class="text-sm text-slate-500 italic">Belum ada data barang keluar.</div>';
+          } else {
+            topKeluarContainer.innerHTML = topKeluarData.slice(0, 4).map((item, idx) => `
+              <div class="flex items-center gap-4 group">
+                <div class="w-12 h-12 rounded-xl bg-slate-100 flex-shrink-0 overflow-hidden relative">
+                  <img src="${item.barang?.foto ? 'http://localhost:3000'+item.barang.foto : '../assets/electron.svg'}" class="w-full h-full object-cover" />
+                  <div class="absolute top-0 left-0 w-full h-full bg-black/10 group-hover:bg-transparent transition-colors"></div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="text-sm font-bold text-slate-800 truncate">${item.namaBarang}</h4>
+                  <p class="text-xs text-slate-500">Total Keluar: <span class="font-bold text-amber-600">${item.totalKeluar}</span></p>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center font-bold text-slate-400 text-xs border border-slate-100 shadow-sm">
+                  #${idx + 1}
+                </div>
+              </div>
+            `).join('');
+          }
+        }
+
+        // 4. Riwayat Terakhir
+        const riwayatRes = await fetch('http://localhost:3000/api/riwayat', { headers: { 'Authorization': `Bearer ${token}` } });
+        const riwayatData = await riwayatRes.json();
+        const riwayatContainer = document.getElementById('riwayatList');
+        if (riwayatContainer) {
+          if (riwayatData.length === 0) {
+            riwayatContainer.innerHTML = '<div class="text-sm text-slate-500 italic pl-3">Belum ada aktivitas tercatat.</div>';
+          } else {
+            riwayatContainer.innerHTML = riwayatData.slice(0, 5).map(item => {
+              const isMasuk = item.tipe === 'masuk';
+              const date = new Date(item.createdAt);
+              const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+              const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+              return `
+              <div class="relative pl-6">
+                <div class="absolute -left-2.5 top-1.5 w-5 h-5 rounded-full border-4 border-white ${isMasuk ? 'bg-emerald-500' : 'bg-rose-500'} shadow-sm z-10"></div>
+                <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 hover:border-indigo-100 transition-colors">
+                  <div class="flex justify-between items-start mb-1">
+                    <h4 class="text-sm font-bold text-slate-800 truncate pr-2">${item.namaBarang}</h4>
+                    <span class="text-[10px] font-semibold text-slate-400 whitespace-nowrap bg-white px-2 py-0.5 rounded-full shadow-sm">${dateStr}, ${timeStr}</span>
+                  </div>
+                  <p class="text-xs text-slate-500 mb-1">${item.keterangan || '-'}</p>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold ${isMasuk ? 'text-emerald-600' : 'text-rose-600'}">
+                      ${isMasuk ? '+' : '-'}${item.jumlah} Unit
+                    </span>
+                    <span class="text-xs text-slate-400">• by ${item.username}</span>
+                  </div>
+                </div>
+              </div>
+            `}).join('');
+          }
+        }
+
+        // 5. Barang Baru Ditambahkan
+        const barangBaruContainer = document.getElementById('barangBaruList');
+        if (barangBaruContainer) {
+          const barangBaru = [...barangData].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 4);
+          if (barangBaru.length === 0) {
+            barangBaruContainer.innerHTML = '<div class="text-sm text-slate-500 italic">Belum ada barang ditambahkan.</div>';
+          } else {
+            barangBaruContainer.innerHTML = barangBaru.map(item => `
+              <div class="flex items-center gap-4 group">
+                <div class="w-12 h-12 rounded-xl bg-slate-100 flex-shrink-0 overflow-hidden relative">
+                  <img src="${item.foto ? 'http://localhost:3000'+item.foto : '../assets/electron.svg'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="text-sm font-bold text-slate-800 truncate">${item.nama}</h4>
+                  <p class="text-xs text-slate-500">Stok: <span class="font-bold text-slate-700">${item.stok}</span> | Rp ${item.harga.toLocaleString('id-ID')}</p>
+                </div>
+                <div class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
+                  Baru
+                </div>
+              </div>
+            `).join('');
+          }
+        }
+
+        // 6. Chart Barang Keluar
+        const chartRes = await fetch('http://localhost:3000/api/riwayat/stats/chart?range=7', { headers: { 'Authorization': `Bearer ${token}` } });
+        const chartData = await chartRes.json();
+        
+        const ctx = document.getElementById('chartBarangKeluar');
+        if (ctx) {
+          if (dashboardChartInstance) {
+            dashboardChartInstance.destroy();
+          }
+
+          // Proses data: hanya tipe 'keluar'
+          const dateLabels = [];
+          const outgoingData = [];
+          
+          // Buat label 7 hari terakhir
+          for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+            const displayStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            dateLabels.push({ full: dateStr, display: displayStr });
+          }
+
+          const keluarItems = chartData.filter(d => d.tipe === 'keluar');
+
+          dateLabels.forEach(dl => {
+            const match = keluarItems.find(d => d.tanggal === dl.full);
+            outgoingData.push(match ? parseInt(match.totalJumlah) : 0);
+          });
+
+          dashboardChartInstance = new window.Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: dateLabels.map(d => d.display),
+              datasets: [{
+                label: 'Barang Keluar',
+                data: outgoingData,
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                borderWidth: 3,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#4f46e5',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: true,
+                tension: 0.4
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: '#1e293b',
+                  padding: 12,
+                  titleFont: { size: 13, family: 'sans-serif' },
+                  bodyFont: { size: 14, weight: 'bold', family: 'sans-serif' },
+                  displayColors: false,
+                  cornerRadius: 8,
+                  callbacks: {
+                    label: function(context) {
+                      return context.parsed.y + ' Unit Keluar';
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: { color: '#f1f5f9', drawBorder: false },
+                  ticks: { font: { family: 'sans-serif', size: 11 }, color: '#64748b', precision: 0 }
+                },
+                x: {
+                  grid: { display: false, drawBorder: false },
+                  ticks: { font: { family: 'sans-serif', size: 11 }, color: '#64748b' }
+                }
+              },
+              interaction: {
+                intersect: false,
+                mode: 'index',
+              },
+            }
+          });
+        }
+
+      } catch (error) {
+        console.error('Error loading dashboard user:', error);
+      }
+    };
 
     // Load initial route on startup
     const initialRoute = window.location.hash.substring(1) || 'dashboard';

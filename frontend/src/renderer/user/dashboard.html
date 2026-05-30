@@ -1,7 +1,162 @@
-<div>
-  <div class="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm mb-8">
-    <h1 class="text-2xl font-bold text-slate-800 mb-1">Halo, <span id="welcomeName">User</span>!</h1>
-    <p class="text-slate-500">Anda masuk sebagai pengguna biasa. Anda dapat melihat daftar inventaris barang di
-      sini.</p>
+<div class="space-y-6 pb-8">
+  <!-- Welcome Banner -->
+  <div class="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-3xl p-8 shadow-lg shadow-indigo-500/30 text-white relative overflow-hidden">
+    <div class="relative z-10">
+      <h1 class="text-3xl font-extrabold mb-2 tracking-tight">Halo, <span id="welcomeName" class="text-indigo-100">User</span>!</h1>
+      <p class="text-indigo-100 font-medium max-w-xl">Selamat datang di dashboard Inventaris. Berikut adalah ringkasan aktivitas dan status barang saat ini.</p>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Stat 1 -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center gap-5 hover:shadow-md transition-shadow group">
+      <div class="w-14 h-14 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+      </div>
+      <div>
+        <p class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Total Barang</p>
+        <h3 class="text-3xl font-extrabold text-slate-800" id="statTotalBarang">0</h3>
+      </div>
+    </div>
+    <!-- Stat 2 -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center gap-5 hover:shadow-md transition-shadow group">
+      <div class="w-14 h-14 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+      </div>
+      <div>
+        <p class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Kategori</p>
+        <h3 class="text-3xl font-extrabold text-slate-800" id="statTotalKategori">0</h3>
+      </div>
+    </div>
+    <!-- Stat 3 -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center gap-5 hover:shadow-md transition-shadow group relative overflow-hidden">
+      <div class="w-14 h-14 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+      </div>
+      <div>
+        <p class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Stok Habis</p>
+        <h3 class="text-3xl font-extrabold text-rose-600" id="statStokHabis">0</h3>
+      </div>
+      <div class="absolute right-0 bottom-0 w-2 h-full bg-rose-500 rounded-r-2xl"></div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <!-- Left Column (Span 2) -->
+    <div class="lg:col-span-2 space-y-6">
+      
+      <!-- Chart Card -->
+      <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+            </div>
+            Grafik Barang Keluar (7 Hari)
+          </h3>
+        </div>
+        <div class="h-72 w-full">
+          <canvas id="chartBarangKeluar"></canvas>
+        </div>
+      </div>
+
+      <!-- Barang Baru & Paling Sering Keluar Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Barang Paling Sering Keluar -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+          <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+            </div>
+            Sering Keluar
+          </h3>
+          <div id="topKeluarList" class="space-y-4">
+            <div class="animate-pulse flex space-x-4">
+              <div class="rounded-full bg-slate-200 h-10 w-10"></div>
+              <div class="flex-1 space-y-2 py-1"><div class="h-4 bg-slate-200 rounded w-3/4"></div><div class="h-3 bg-slate-200 rounded w-1/2"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barang Baru Ditambahkan Admin -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+          <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+            </div>
+            Baru Ditambahkan
+          </h3>
+          <div id="barangBaruList" class="space-y-4">
+            <div class="animate-pulse flex space-x-4">
+              <div class="rounded-full bg-slate-200 h-10 w-10"></div>
+              <div class="flex-1 space-y-2 py-1"><div class="h-4 bg-slate-200 rounded w-3/4"></div><div class="h-3 bg-slate-200 rounded w-1/2"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column (Span 1) -->
+    <div class="space-y-6">
+      
+      <!-- Fitur Barang Menipis -->
+      <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 relative overflow-hidden">
+        <div class="absolute top-0 right-0 p-4 opacity-5">
+          <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 relative z-10">
+          <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          Stok Menipis
+        </h3>
+        <div id="stokTipisList" class="space-y-3 relative z-10 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+          <div class="animate-pulse flex space-x-4">
+            <div class="flex-1 space-y-2 py-1"><div class="h-4 bg-slate-200 rounded w-full"></div><div class="h-3 bg-slate-200 rounded w-5/6"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Riwayat Aktivitas Terakhir -->
+      <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            Aktivitas Terakhir
+          </h3>
+          <a href="#riwayat" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700">Lihat Semua</a>
+        </div>
+        <div class="relative pl-3">
+          <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-100"></div>
+          <div id="riwayatList" class="space-y-5">
+            <div class="animate-pulse flex space-x-4">
+              <div class="rounded-full bg-slate-200 h-8 w-8 relative z-10"></div>
+              <div class="flex-1 space-y-2 py-1"><div class="h-4 bg-slate-200 rounded w-3/4"></div><div class="h-3 bg-slate-200 rounded w-1/2"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
+
+<style>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 20px;
+}
+</style>
